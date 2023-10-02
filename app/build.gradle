@@ -86,13 +86,6 @@ dependencies {
     implementation "com.squareup.picasso:picasso:$picasso_version"
     implementation "de.hdodenhof:circleimageview:$circleimageview_version"
 
-    testImplementation "junit:junit:$junit_version"
-    testImplementation "androidx.arch.core:core-testing:$core_testing_version"
-
-    androidTestImplementation "androidx.test:runner:$test_runner_version"
-    androidTestImplementation "androidx.test.espresso:espresso-core:$espresso_version"
-    androidTestImplementation "androidx.test:core-ktx:$core_ktx_test_version"
-
     implementation("androidx.room:room-runtime:$room_version")
     implementation("androidx.room:room-ktx:$room_version")
     kapt("androidx.room:room-compiler:$room_version")
@@ -103,6 +96,13 @@ dependencies {
     implementation("androidx.navigation:navigation-ui-ktx:2.7.3")
 
 
+    testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutines_version"
     testImplementation "io.mockk:mockk-android:1.13.7"
     testImplementation "io.mockk:mockk-agent:1.13.7"
+    testImplementation "junit:junit:$junit_version"
+    testImplementation "androidx.arch.core:core-testing:$core_testing_version"
+
+    androidTestImplementation "androidx.test:runner:$test_runner_version"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$espresso_version"
+    androidTestImplementation "androidx.test:core-ktx:$core_ktx_test_version"
 }

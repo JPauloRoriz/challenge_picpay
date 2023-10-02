@@ -1,4 +1,4 @@
-package com.picpay.desafio.android.data.repository.exception
+package com.picpay.desafio.android.domain.exception
 
 class ConnectionException : Exception()
 class DefaultException : Exception()

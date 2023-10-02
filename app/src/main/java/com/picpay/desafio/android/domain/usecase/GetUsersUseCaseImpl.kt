@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.Flow
 class GetUsersUseCaseImpl(
     private val repository: UsersRepository
 ) : GetUsersUseCase {
-    override suspend fun getAllUsers(): Flow<List<UserModel>> {
-        return repository.getAllUsersModel()
-    }
+    override fun getAllUsers() = repository.getAllUsersModel()
+
 }

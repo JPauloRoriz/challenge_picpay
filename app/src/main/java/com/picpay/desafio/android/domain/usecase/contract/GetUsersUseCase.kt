@@ -4,5 +4,5 @@ import com.picpay.desafio.android.domain.model.UserModel
 import kotlinx.coroutines.flow.Flow
 
 interface GetUsersUseCase {
-    suspend fun getAllUsers() : Flow<List<UserModel>>
+    fun getAllUsers() : Flow<Result<List<UserModel>>>
 }

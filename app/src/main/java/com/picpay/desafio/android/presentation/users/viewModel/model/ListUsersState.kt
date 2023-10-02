@@ -10,5 +10,5 @@ data class ListUsersState(
     val iconError: Int = R.drawable.baseline_error_24,
     val titleError: String = "",
     val descriptionError :String = "",
-    val usersModelList: List<UserModel> = listOf()
+    var usersModelList: List<UserModel> = listOf()
 )

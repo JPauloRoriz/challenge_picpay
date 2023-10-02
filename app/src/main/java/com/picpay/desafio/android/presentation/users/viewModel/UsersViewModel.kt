@@ -6,20 +6,19 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.picpay.desafio.android.R
-import com.picpay.desafio.android.data.repository.exception.ConnectionException
-import com.picpay.desafio.android.data.repository.exception.DefaultException
+import com.picpay.desafio.android.domain.exception.ConnectionException
+import com.picpay.desafio.android.domain.exception.DefaultException
 import com.picpay.desafio.android.domain.model.UserModel
 import com.picpay.desafio.android.domain.usecase.contract.GetUsersUseCase
 import com.picpay.desafio.android.presentation.commons.SingleLiveEvent
 import com.picpay.desafio.android.presentation.users.viewModel.model.ListUsersEvent
 import com.picpay.desafio.android.presentation.users.viewModel.model.ListUsersState
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 
 class UsersViewModel(
     private val useCase: GetUsersUseCase,
-    private val application: Application
+    private val application: Application,
 ) : ViewModel() {
 
     private val _stateLiveData = MutableLiveData(ListUsersState())
@@ -36,19 +35,26 @@ class UsersViewModel(
         _stateLiveData.postValue(ListUsersState(isLoading = true))
         viewModelScope.launch(Dispatchers.IO) {
             useCase.getAllUsers()
-                .catch { error -> treatmentError(error) }
-                .collect { result -> treatmentSuccess(result) }
+                .collect { result ->
+                    result.onSuccess {
+                        treatmentSuccess(result.getOrNull().orEmpty())
+                    }.onFailure { error ->
+                        treatmentError(error)
+                    }
+                }
         }
     }
 
-     fun treatmentSuccess(result: List<UserModel>) {
-        _stateLiveData.postValue(
-            _stateLiveData.value?.copy(
-                isLoading = false,
-                showOffline = false,
-                usersModelList = result
-            )
-        )
+  private fun treatmentSuccess(result: List<UserModel>) {
+      if(result.isNotEmpty()){
+          _stateLiveData.postValue(
+              _stateLiveData.value?.copy(
+                  isLoading = false,
+                  showOffline = false,
+                  usersModelList = result
+              )
+          )
+      }
     }
 
 
@@ -61,7 +67,6 @@ class UsersViewModel(
                         showError = false,
                         isLoading = false,
                     )
-
                 } else {
                     when (error) {
                         is ConnectionException -> {
@@ -76,7 +81,15 @@ class UsersViewModel(
                                 )
                         }
                         is DefaultException -> {
-
+                            _stateLiveData.value =
+                                _stateLiveData.value?.copy(
+                                    showOffline = false,
+                                    isLoading = false,
+                                    showError = true,
+                                    iconError = R.drawable.baseline_extension_off_24,
+                                    titleError = application.getString(R.string.attention),
+                                    descriptionError = application.getString(R.string.default_exception)
+                                )
                         }
                     }
                 }
