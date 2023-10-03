@@ -20,8 +20,9 @@ val appModule = module {
 
     factory<UsersRepository> { UsersRepositoryImpl(get(), get()) }
 
-    single { get<Retrofit>().create(PicPayService::class.java) }
     single { retrofit }
+
+    single { get<Retrofit>().create(PicPayService::class.java) }
 
     single { AppDatabase.getInstance(get()) }
 

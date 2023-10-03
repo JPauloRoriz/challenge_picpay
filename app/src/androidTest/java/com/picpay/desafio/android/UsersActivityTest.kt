@@ -7,43 +7,47 @@ import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.espresso.matcher.ViewMatchers.withText
 import androidx.test.platform.app.InstrumentationRegistry
+import com.picpay.desafio.android.data.database.UserDao
+import com.picpay.desafio.android.data.database.entity.DataUser
+import com.picpay.desafio.android.data.model.UserResponse
+import com.picpay.desafio.android.data.service.PicPayService
 import com.picpay.desafio.android.presentation.users.UsersActivity
-import okhttp3.mockwebserver.Dispatcher
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
-import okhttp3.mockwebserver.RecordedRequest
+import io.mockk.coEvery
+import io.mockk.mockk
+import org.junit.After
+import org.junit.Before
 import org.junit.Test
+import org.koin.core.context.loadKoinModules
+import org.koin.core.context.unloadKoinModules
+import org.koin.dsl.module
+import java.io.IOException
 
 
 class UsersActivityTest {
 
-    private val server = MockWebServer()
-
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
-    @Test
-    fun shouldDisplayTitle() {
-        launchActivity<UsersActivity>().apply {
-            val expectedTitle = context.getString(R.string.title)
-
-            moveToState(Lifecycle.State.RESUMED)
-
-            onView(withText(expectedTitle)).check(matches(isDisplayed()))
+    private val picPayService: PicPayService = mockk(relaxed = true)
+    private val userDao: UserDao = mockk(relaxed = true)
+    private val module by lazy {
+        module {
+            single { userDao }
+            single { picPayService }
         }
+    }
+
+    @Before
+    fun setupBefore() {
+        loadKoinModules(module)
+    }
+
+    @After
+    fun setupAfter() {
+        unloadKoinModules(module)
     }
 
     @Test
     fun shouldDisplayListItem() {
-        server.dispatcher = object : Dispatcher() {
-            override fun dispatch(request: RecordedRequest): MockResponse {
-                return when (request.path) {
-                    "/users" -> successResponse
-                    else -> errorResponse
-                }
-            }
-        }
-
-        server.start(serverPort)
 
         launchActivity<UsersActivity>().apply {
             val expectedTitle = context.getString(R.string.title)
@@ -52,22 +56,64 @@ class UsersActivityTest {
 
             onView(withText(expectedTitle)).check(matches(isDisplayed()))
         }
+    }
 
-        server.close()
+    @Test
+    fun verifyListSuccessWithoutCache() {
+        coEvery { userDao.getAllUsers() } returns successCache
+        coEvery { picPayService.getUsers() } returns successResponse
+
+        launchActivity<UsersActivity>().apply {
+            moveToState(Lifecycle.State.RESUMED)
+            onView(withText("João")).check(matches(isDisplayed()))
+            onView(withText("teste")).check(matches(isDisplayed()))
+        }
+    }
+
+    @Test
+    fun verifyListErrorWithCache() {
+        coEvery { userDao.getAllUsers() } returns successCache
+        coEvery { picPayService.getUsers() } throws Exception()
+
+        launchActivity<UsersActivity>().apply {
+            moveToState(Lifecycle.State.RESUMED)
+            onView(withText("teste2")).check(matches(isDisplayed()))
+            onView(withText("Pedro")).check(matches(isDisplayed()))
+            onView(withText(R.string.text_offline)).check(matches(isDisplayed()))
+        }
+    }
+
+    @Test
+    fun verifyListErrorConnectionWithoutCache() {
+        coEvery { userDao.getAllUsers() } returns listOf()
+        coEvery { picPayService.getUsers() } throws IOException()
+
+        launchActivity<UsersActivity>().apply {
+            moveToState(Lifecycle.State.RESUMED)
+            onView(withText(R.string.attention)).check(matches(isDisplayed()))
+            onView(withText(R.string.default_exception)).check(matches(isDisplayed()))
+        }
+    }
+
+    @Test
+    fun verifyListErrorWithoutCache() {
+        coEvery { userDao.getAllUsers() } returns listOf()
+        coEvery { picPayService.getUsers() } throws IOException()
+
+        launchActivity<UsersActivity>().apply {
+            moveToState(Lifecycle.State.RESUMED)
+            onView(withText(R.string.attention)).check(matches(isDisplayed()))
+            onView(withText(R.string.default_exception)).check(matches(isDisplayed()))
+        }
     }
 
     companion object {
-        private const val serverPort = 8080
 
         private val successResponse by lazy {
-            val body =
-                "[{\"id\":1001,\"name\":\"Gabriela Santos\",\"img\":\"https://randomuser.me/api/portraits/men/9.jpg\",\"username\":\"@eduardo.santos\"}]"
-
-            MockResponse()
-                .setResponseCode(200)
-                .setBody(body)
+            listOf(UserResponse("img", "João", 15, "teste"))
         }
-
-        private val errorResponse by lazy { MockResponse().setResponseCode(404) }
+        private val successCache by lazy {
+            listOf(DataUser(6, "img", "Pedro", "teste2"))
+        }
     }
 }
